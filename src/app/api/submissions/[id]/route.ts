@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
+    const { id } = await params;
     const db = getDb();
-    const row = db.prepare('SELECT * FROM submissions WHERE id = ?').get(params.id);
+    const row = db.prepare('SELECT * FROM submissions WHERE id = ?').get(id);
     if (!row) {
       return NextResponse.json({ error: '신청 내역을 찾을 수 없습니다.' }, { status: 404 });
     }
@@ -19,8 +20,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
+    const { id } = await params;
     const db = getDb();
-    const existing = db.prepare('SELECT id FROM submissions WHERE id = ?').get(params.id);
+    const existing = db.prepare('SELECT id FROM submissions WHERE id = ?').get(id);
     if (!existing) {
       return NextResponse.json({ error: '신청 내역을 찾을 수 없습니다.' }, { status: 404 });
     }
@@ -53,10 +55,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
       name.trim(), email.trim(), phone || null, affiliation || null,
       age_group || null, gender || null, purpose || null, ai_experience || null,
       areasJson, comments || null, status || 'pending',
-      params.id,
+      id,
     );
 
-    const updated = db.prepare('SELECT * FROM submissions WHERE id = ?').get(params.id);
+    const updated = db.prepare('SELECT * FROM submissions WHERE id = ?').get(id);
     return NextResponse.json(updated);
   } catch (err) {
     console.error('[PUT /api/submissions/:id]', err);
@@ -66,12 +68,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
+    const { id } = await params;
     const db = getDb();
-    const existing = db.prepare('SELECT id FROM submissions WHERE id = ?').get(params.id);
+    const existing = db.prepare('SELECT id FROM submissions WHERE id = ?').get(id);
     if (!existing) {
       return NextResponse.json({ error: '신청 내역을 찾을 수 없습니다.' }, { status: 404 });
     }
-    db.prepare('DELETE FROM submissions WHERE id = ?').run(params.id);
+    db.prepare('DELETE FROM submissions WHERE id = ?').run(id);
     return NextResponse.json({ message: '삭제되었습니다.' });
   } catch (err) {
     console.error('[DELETE /api/submissions/:id]', err);

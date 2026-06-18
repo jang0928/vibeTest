@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Submission } from '@/types';
@@ -33,7 +33,8 @@ interface EditForm {
   status: 'pending' | 'approved' | 'rejected';
 }
 
-export default function EditSubmissionPage({ params }: { params: { id: string } }) {
+export default function EditSubmissionPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const [form, setForm] = useState<EditForm | null>(null);
   const [original, setOriginal] = useState<Submission | null>(null);
@@ -43,7 +44,7 @@ export default function EditSubmissionPage({ params }: { params: { id: string } 
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
-    fetch(`/api/submissions/${params.id}`)
+    fetch(`/api/submissions/${id}`)
       .then((r) => {
         if (!r.ok) throw new Error('not found');
         return r.json();
@@ -71,7 +72,7 @@ export default function EditSubmissionPage({ params }: { params: { id: string } 
         });
       })
       .catch(() => setLoadError('신청 내역을 불러올 수 없습니다.'));
-  }, [params.id]);
+  }, [id]);
 
   const set = <K extends keyof EditForm>(key: K, value: EditForm[K]) =>
     setForm((prev) => prev ? { ...prev, [key]: value } : prev);
@@ -92,7 +93,7 @@ export default function EditSubmissionPage({ params }: { params: { id: string } 
     setSuccess('');
     setSaving(true);
     try {
-      const res = await fetch(`/api/submissions/${params.id}`, {
+      const res = await fetch(`/api/submissions/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -112,9 +113,9 @@ export default function EditSubmissionPage({ params }: { params: { id: string } 
   };
 
   const handleDelete = async () => {
-    if (!confirm(`#${params.id} 신청 내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+    if (!confirm(`#${id} 신청 내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
     try {
-      await fetch(`/api/submissions/${params.id}`, { method: 'DELETE' });
+      await fetch(`/api/submissions/${id}`, { method: 'DELETE' });
       router.push('/admin/submissions');
     } catch {
       setError('삭제 중 오류가 발생했습니다.');
@@ -155,7 +156,7 @@ export default function EditSubmissionPage({ params }: { params: { id: string } 
           <Link href="/admin/submissions" className="text-gray-400 hover:text-gray-600 transition">
             ← 목록
           </Link>
-          <h1 className="text-xl font-bold text-gray-900">신청 수정 #{params.id}</h1>
+          <h1 className="text-xl font-bold text-gray-900">신청 수정 #{id}</h1>
         </div>
         <div className="text-xs text-gray-400">
           {original && `등록: ${formatDate(original.created_at)} · 수정: ${formatDate(original.updated_at)}`}
